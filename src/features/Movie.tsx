@@ -1,39 +1,66 @@
+import React from 'react';
 import { useParams } from 'react-router';
 import { useQuery } from 'react-query';
+
+interface Genre {
+  id: number;
+  name: string;
+}
+
+interface MovieData {
+  title: string;
+  overview: string;
+  runtime: number;
+  vote_average: number;
+  release_date: string;
+  backdrop_path: string;
+  poster_path: string;
+  genres: Genre[];
+}
 
 const API_KEY = '3a60a40913f34c427412e53b6b852fc3';
 const API_URL = 'https://api.themoviedb.org/3';
 
-function Movie() {
-  const { movieId } = useParams();
+const Movie: React.FC = () => {
+  const { movieId } = useParams<{ movieId: string }>();
 
-  const { data, isLoading, error } = useQuery(['movie', movieId], async () => {
-    const response = await fetch(
-      `${API_URL}/movie/${movieId}?api_key=${API_KEY}`,
-    );
+  const { data, isLoading, error } = useQuery<MovieData>(
+    ['movie', movieId],
+    async () => {
+      const response = await fetch(
+        `${API_URL}/movie/${movieId}?api_key=${API_KEY}`,
+      );
 
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
 
-    return response.json();
-  });
+      return response.json();
+    },
+  );
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error)
+    return (
+      <div>
+        Error: {error instanceof Error ? error.message : 'An error occurred'}
+      </div>
+    );
+  if (!data) return <div>No data available</div>;
 
   const releaseYear = new Date(data.release_date).getFullYear();
+
   return (
-    <div className="relative">
+    <>
       <div
-        className="m-auto flex h-dvh"
+        className=" m-auto flex h-screen"
         style={{
           backgroundImage: `url(https://image.tmdb.org/t/p/original${data.backdrop_path})`,
           backgroundSize: 'cover',
           filter: 'blur(10px)',
         }}
       ></div>
-      <div className="absolute inset-0 m-auto flex max-h-fit flex-col items-center gap-4 rounded-md bg-stone-900 bg-opacity-70 px-6  py-8 text-slate-100 md:w-1/2 md:flex-row">
+      <div className="absolute inset-0 m-auto flex max-h-fit flex-col items-center gap-4  rounded-md bg-stone-900 bg-opacity-70 px-6  py-8 text-slate-100 md:w-1/2 md:flex-row">
         <div>
           <img
             src={`https://image.tmdb.org/t/p/w500${data.poster_path}`}
@@ -54,9 +81,9 @@ function Movie() {
           </h2>
           <h2 className="text-md font-semibold">Released: {releaseYear}</h2>
           <ul className=" flex flex-wrap justify-center md:justify-start">
-            {data.genres.map((genre, index) => (
+            {data.genres.map((genre) => (
               <li
-                key={index}
+                key={genre.id}
                 className="mb-2 mr-2 mt-2 rounded bg-neutral-950 px-2 py-1"
               >
                 {genre.name}
@@ -65,8 +92,8 @@ function Movie() {
           </ul>
         </div>
       </div>
-    </div>
+    </>
   );
-}
+};
 
 export default Movie;
